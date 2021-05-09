@@ -82,29 +82,49 @@ active proctype DoorController()
 {
     do
     ::  if 
-        :: door_front_state == DOOR_CLOSED->
-            if
-            :: door_lock_front_req == DOOR_LOCK_REQ ->
-                door_lock_front_state = DOOR_LOCKED;
-                printf("front door locked\n");
-            :: door_lock_front_req == DOOR_UNLOCK_REQ ->
-                door_lock_front_state = DOOR_UNLOCKED;
-                printf("front door unlocked\n");
-            :: else
-            fi;
+        :: atomic{
+                door_front_state == DOOR_CLOSED->
+                if
+                :: atomic{
+                        door_lock_front_req == DOOR_LOCK_REQ ->
+                        door_lock_front_state = DOOR_LOCKED;
+                        printf("front door locked\n");
+                    }
+                :: atomic{
+                        ((door_lock_front_req == DOOR_UNLOCK_REQ) &&
+                        (es_state == ES_OFF))->
+                            door_lock_front_state = DOOR_UNLOCKED;
+                            printf("front door unlocked\n");
+                            printf("es_state:");
+                            printm(es_state)
+                            printf("\n")
+                    }
+                :: else
+                fi;
+            }
         :: else
         fi;
         if 
-        :: door_back_state == DOOR_CLOSED->
-            if
-            :: door_lock_back_req == DOOR_LOCK_REQ ->
-                door_lock_back_state = DOOR_LOCKED;
-                printf("back door locked\n");
-            :: door_lock_back_req == DOOR_UNLOCK_REQ ->
-                door_lock_back_state = DOOR_UNLOCKED;
-                printf("back door unlocked\n");
-            :: else
-            fi;
+        :: atomic{
+                door_back_state == DOOR_CLOSED->
+                if
+                :: atomic{
+                        door_lock_back_req == DOOR_LOCK_REQ ->
+                        door_lock_back_state = DOOR_LOCKED;
+                        printf("back door locked\n");
+                    }
+                :: atomic{
+                        ((door_lock_back_req == DOOR_UNLOCK_REQ) &&
+                        (es_state == ES_OFF))->
+                            door_lock_back_state = DOOR_UNLOCKED;
+                            printf("back door unlocked\n");
+                            printf("es_state:");
+                            printm(es_state)
+                            printf("\n")
+                    }
+                :: else
+                fi;
+            }
         :: else
         fi;
     od
@@ -113,20 +133,34 @@ active proctype DoorController()
 active proctype ShutterController()
 {
     do
-    :: shutter_req == SHUTTER_UP_REQ ->
-        shutter_state = SHUTTER_UPPED;
-        printf("shutter upped\n");
-    :: shutter_req == SHUTTER_DOWN_REQ ->
-        shutter_state = SHUTTER_DOWNED;
-        printf("shutter downed\n");
-    :: (es_req == ES_ON_REQ) && (shutter_state == SHUTTER_DOWNED) &&
-       (door_front_state == DOOR_CLOSED) && (door_lock_front_state == DOOR_LOCKED) &&
-       (door_back_state == DOOR_CLOSED) && (door_lock_back_state == DOOR_LOCKED) ->
-        es_state = ES_ON;
-        printf("electronic shock ON!!!!!!!!!!!!!!\n");
-    :: es_req == ES_OFF_REQ ->
-        es_state = ES_OFF;
-        printf("electronic shock OFF\n");
+    :: atomic{
+            shutter_req == SHUTTER_UP_REQ ->
+            shutter_state = SHUTTER_UPPED;
+            printf("shutter upped\n");
+        }
+    :: atomic{
+            shutter_req == SHUTTER_DOWN_REQ ->
+            shutter_state = SHUTTER_DOWNED;
+            printf("shutter downed\n");
+        }
+    :: atomic{
+            (es_req == ES_ON_REQ) && (shutter_state == SHUTTER_DOWNED) &&
+            (door_front_state == DOOR_CLOSED) && (door_lock_front_state == DOOR_LOCKED) &&
+            (door_back_state == DOOR_CLOSED) && (door_lock_back_state == DOOR_LOCKED) ->
+                es_state = ES_ON;
+                printf("electronic shock ON!!!!!!!!!!!!!!\n");
+                printf("door_lock_front_state:");
+                printm(door_lock_front_state);
+                printf("\n");
+                printf("door_lock_back_state:");
+                printm(door_lock_back_state);
+                printf("\n");
+        }
+    :: atomic{
+            es_req == ES_OFF_REQ ->
+            es_state = ES_OFF;
+            printf("electronic shock OFF\n");
+        }
     :: else;
     od;
 }
