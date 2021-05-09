@@ -91,8 +91,7 @@ active proctype DoorController()
                         printf("front door locked\n");
                     }
                 :: atomic{
-                        ((door_lock_front_req == DOOR_UNLOCK_REQ) &&
-                        (es_state == ES_OFF))->
+                        (door_lock_front_req == DOOR_UNLOCK_REQ) ->
                             door_lock_front_state = DOOR_UNLOCKED;
                             printf("front door unlocked\n");
                             printf("es_state:");
@@ -114,8 +113,7 @@ active proctype DoorController()
                         printf("back door locked\n");
                     }
                 :: atomic{
-                        ((door_lock_back_req == DOOR_UNLOCK_REQ) &&
-                        (es_state == ES_OFF))->
+                        (door_lock_back_req == DOOR_UNLOCK_REQ) ->
                             door_lock_back_state = DOOR_UNLOCKED;
                             printf("back door unlocked\n");
                             printf("es_state:");
